@@ -26,7 +26,7 @@ namespace CalculatorApp
             InitializeComponent();
 
             // Вызываем AllocConsole для создания консольного окна
-            AllocConsole();
+            // AllocConsole();
         }
 
         // Обработка нажатия цифр
@@ -125,7 +125,7 @@ namespace CalculatorApp
                 }
 
                 string expression = txtDisplay.Text.Replace("×", "*").Replace("÷", "/").Replace("−", "-").Replace("^", "^");
-                double result = 12345.6789;
+                double result = Calculator.Calculate(expression);
 
                 // Очистка дисплея и отображение результата
                 txtDisplay.Clear();
