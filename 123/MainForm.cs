@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Windows.Forms;
+using CalculatorLib;
 
 namespace CalculatorApp
 {
     public partial class MainForm : Form
     {
+        private const int MaxСharacters = 100;
+        private bool isResultDisplayed = false;
+
         public MainForm()
         {
             InitializeComponent();
@@ -63,12 +67,12 @@ namespace CalculatorApp
 
         private void BtnSquare_Click(object sender, EventArgs e)
         {
-            AppendToDisplay("^2");
+            AppendToDisplay("^(2)");
         }
 
         private void BtnPower_Click(object sender, EventArgs e)
         {
-            AppendToDisplay("^");
+            AppendToDisplay("^(");
         }
 
         // Обработка очистки дисплея
@@ -86,29 +90,10 @@ namespace CalculatorApp
             }
         }
 
-        // Обработка изменения знака числа
-        private void BtnPlusMinus_Click(object sender, EventArgs e)
+        // Обработка нажатия логарифма
+        private void BtnLog_Click(object sender, EventArgs e)
         {
-            if (txtDisplay.Text.Length > 0)
-            {
-                // Поиск последнего числа в строке
-                int lastOperatorIndex = txtDisplay.Text.LastIndexOfAny(new char[] { '+', '-', '×', '÷', '^' });
-                if (lastOperatorIndex == -1)
-                {
-                    lastOperatorIndex = 0;
-                }
-                else
-                {
-                    lastOperatorIndex += 1;
-                }
-
-                string number = txtDisplay.Text.Substring(lastOperatorIndex).Trim();
-                if (double.TryParse(number, out double result))
-                {
-                    result = -result;
-                    txtDisplay.Text = txtDisplay.Text.Substring(0, lastOperatorIndex) + result.ToString();
-                }
-            }
+            AppendToDisplay("ln(");
         }
 
         // Обработка нажатия равно
@@ -118,7 +103,12 @@ namespace CalculatorApp
             {
                 string expression = txtDisplay.Text.Replace("×", "*").Replace("÷", "/").Replace("−", "-").Replace("^", "^");
                 double result = 12345.6789;
-                txtDisplay.Text += Environment.NewLine + result.ToString();
+
+                // Очистка дисплея и отображение результата
+                txtDisplay.Clear();
+                txtDisplay.AppendText(result.ToString());
+
+                isResultDisplayed = true;
             }
             catch (Exception ex)
             {
@@ -129,12 +119,34 @@ namespace CalculatorApp
         // Метод для добавления текста в дисплей с поддержкой переноса строк
         private void AppendToDisplay(string text)
         {
-            // Проверка длины строки и добавление переноса, если необходимо
-            if (txtDisplay.Text.Length > 1000) // Порог длины можно настроить
+            if (isResultDisplayed && !char.IsDigit(text, 0) && text != ".")
             {
-                txtDisplay.Text = txtDisplay.Text.Substring(txtDisplay.Text.Length - 1000);
+                // Если был показан результат и пользователь нажимает операцию, оставляем результат
+                isResultDisplayed = false;
             }
-            txtDisplay.AppendText(text);
+            else if (isResultDisplayed)
+            {
+                // Если был показан результат и пользователь начинает вводить новое число, очищаем дисплей
+                txtDisplay.Clear();
+                isResultDisplayed = false;
+            }
+
+            // Проверка количества символов
+            if (txtDisplay.Text.Length > MaxСharacters)
+            {
+                // Уведомление пользователя
+                MessageBox.Show("Достигнут лимит длины операции.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                string expression = txtDisplay.Text + text;
+                bool isValid = ExpressionValidator.ValidateExpression(expression, false);
+
+                if (isValid)
+                {
+                    txtDisplay.AppendText(text);
+                }
+            }
         }
     }
 }
