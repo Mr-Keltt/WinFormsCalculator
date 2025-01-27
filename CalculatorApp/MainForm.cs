@@ -1,16 +1,32 @@
 ﻿using System;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using CalculatorLib;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CalculatorApp
 {
     public partial class MainForm : Form
     {
+        // Импортируем функцию AllocConsole из kernel32.dll
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool AllocConsole();
+
+        // Импортируем функцию FreeConsole для освобождения консоли (опционально)
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FreeConsole();
+
+
         private const int MaxСharacters = 100;
         private bool isResultDisplayed = false;
 
         public MainForm()
         {
             InitializeComponent();
+
+            // Вызываем AllocConsole для создания консольного окна
+            // AllocConsole();
         }
 
         // Обработка нажатия цифр
@@ -100,12 +116,20 @@ namespace CalculatorApp
         {
             try
             {
+                bool isValid = ExpressionValidator.ValidateExpression(txtDisplay.Text, true);
+                
+                if (!isValid)
+                {
+                    MessageBox.Show("Не валидное выражение", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 string expression = txtDisplay.Text.Replace("×", "*").Replace("÷", "/").Replace("−", "-").Replace("^", "^");
-                double result = 12345.6789;
+                double result = Calculator.Calculate(expression);
 
                 // Очистка дисплея и отображение результата
                 txtDisplay.Clear();
-                txtDisplay.AppendText(result.ToString());
+                txtDisplay.AppendText(result.ToString().Replace(',', '.'));
 
                 isResultDisplayed = true;
             }
@@ -138,11 +162,38 @@ namespace CalculatorApp
             }
             else
             {
-                if (IsValidInput(text))
+                string expression = txtDisplay.Text;
+                bool substitution = false;
+
+                if ("+×÷−".Contains(text) && "+×÷−".Contains((char)expression[^1]))
                 {
-                    txtDisplay.AppendText(text);
+                    expression = expression.Substring(0, expression.Length - 1);
+                    substitution = true;
+                }
+
+                expression += text;
+
+                bool isValid = ExpressionValidator.ValidateExpression(expression, false);
+
+                if (isValid)
+                {
+                    if (substitution)
+                    {
+                        txtDisplay.Text = expression;
+                    }
+                    else
+                    {
+                        txtDisplay.AppendText(text);
+                    }
                 }
             }
+        }
+
+        // Освобождение консоли при закрытии формы
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            FreeConsole();
+            base.OnFormClosing(e);
         }
     }
 }
